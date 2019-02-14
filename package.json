@@ -1,6 +1,6 @@
 {
   "name": "twyla-widget-core",
-  "version": "0.9",
+  "version": "0.9.0",
   "description": "",
   "main": "dist/twyla-widget-core.min.js",
   "scripts": {
