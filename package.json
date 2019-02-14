@@ -1,0 +1,37 @@
+{
+  "name": "twyla-widget-core",
+  "version": "0.9",
+  "description": "",
+  "main": "dist/twyla-widget-core.min.js",
+  "scripts": {
+    "build": "npm run clean && npx webpack --mode production",
+    "clean": "npx rimraf ./dist/twyla-widget-core.js",
+    "test": "npx jest --no-cache ./src"
+  },
+  "author": "Twyla GmbH",
+  "license": "MIT",
+  "dependencies": {
+    "js-cookie": "^2.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-loader": "^8.0.2",
+    "husky": "^1.0.0-rc.13",
+    "jest": "^23.6.0",
+    "mock-socket": "^8.0.2",
+    "prettier": "^1.14.2",
+    "pretty-quick": "^1.6.0",
+    "rimraf": "^2.6.2",
+    "webpack": "^4.17.3",
+    "webpack-bundle-analyzer": "^3.0.3",
+    "webpack-cli": "^3.1.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  }
+}
