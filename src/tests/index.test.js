@@ -10,7 +10,7 @@ describe('notificationsChannelURLFromHookURL tests', () => {
     ).toEqual({
       botName: 'Z10',
       notificationsChannelURL:
-        'wss://notification.production.twyla.io/widget-notifications/massive-dynamic/z10',
+        'wss://api.production.twyla.io/widget-notifications/massive-dynamic/z10',
     });
 
     // demo
@@ -20,8 +20,7 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       )
     ).toEqual({
       botName: 'Z10',
-      notificationsChannelURL:
-        'wss://notification.demo.twyla.io/widget-notifications/massive-dynamic/z10',
+      notificationsChannelURL: 'wss://api.demo.twyla.io/widget-notifications/massive-dynamic/z10',
     });
   });
 

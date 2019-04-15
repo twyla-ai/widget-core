@@ -63,7 +63,7 @@ export const notificationsChannelURLFromHookURL = hookURL => {
   if (hookURL.includes('twyla.io')) {
     environment = /api\.(.*)\.twyla/.exec(hookURL)[1];
 
-    notificationsChannelURL = `wss://notification.${environment}.twyla.io/widget-notifications/${
+    notificationsChannelURL = `wss://api.${environment}.twyla.io/widget-notifications/${
       hookURLTokens[4]
     }/${hookURLTokens[5]}`;
   } else {
