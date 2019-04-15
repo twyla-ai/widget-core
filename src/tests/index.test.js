@@ -34,7 +34,7 @@ describe('notificationsChannelURLFromHookURL tests', () => {
     ).toEqual({
       botName: 'Z10',
       notificationsChannelURL:
-        'wss://notification.rawhide.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
+        'wss://api.rawhide.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
     });
 
     // production
@@ -44,8 +44,7 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       )
     ).toEqual({
       botName: 'Z10',
-      notificationsChannelURL:
-        'wss://notification.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
+      notificationsChannelURL: 'wss://api.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
     });
   });
 });

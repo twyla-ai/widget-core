@@ -72,7 +72,7 @@ export const notificationsChannelURLFromHookURL = hookURL => {
     if (!environmentSearch) environment = 'production';
     else environment = environmentSearch[1];
 
-    notificationsChannelURL = `wss://notification.${
+    notificationsChannelURL = `wss://api.${
       !environmentSearch ? '' : environment + '.'
     }canvas.twyla.ai/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`;
   }
