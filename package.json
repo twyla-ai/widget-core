@@ -1,9 +1,9 @@
 {
   "name": "@twyla-ai/widget-core",
-  "version": "0.10",
+  "version": "0.10.0",
   "description": "",
   "publishConfig": {
-    "registry":"https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/"
   },
   "main": "dist/twyla-widget-core.min.js",
   "scripts": {
