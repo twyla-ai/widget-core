@@ -14,10 +14,9 @@ module.exports = (env, argv) => {
     },
     output: {
       path: `${__dirname}/dist`,
-      filename: `${libraryName}.min.js`,
+      filename: `index.js`,
       library: libraryName,
       libraryTarget: 'umd',
-      umdNamedDefine: true,
     },
     module: {
       rules: [
@@ -39,5 +38,6 @@ module.exports = (env, argv) => {
       nodeEnv: argv.mode,
     },
     plugins: [new BundleAnalyzerPlugin({ analyzerMode: 'disabled' })],
+    externals: ['js-cookie'],
   };
 };

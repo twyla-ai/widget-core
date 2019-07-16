@@ -3,13 +3,13 @@
 ## Installation
 
 ```js
-npm i -S twyla-widget-core
+npm i -S @twyla-ai/widget-core
 ```
 
 ## Usage
 
 ```js
-import {init, send, initiateConversation} from 'twyla-widget-core';
+import {init, send, initiateConversation} from '@twyla-ai/widget-core';
 
 init({ apiKey, hookURL })
   .then(({botName, history}) {
