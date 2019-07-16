@@ -14,10 +14,9 @@ module.exports = (env, argv) => {
     },
     output: {
       path: `${__dirname}/dist`,
-      filename: `${libraryName}.min.js`,
+      filename: `index.js`,
       library: libraryName,
       libraryTarget: 'umd',
-      umdNamedDefine: true,
     },
     module: {
       rules: [
