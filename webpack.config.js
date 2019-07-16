@@ -39,5 +39,6 @@ module.exports = (env, argv) => {
       nodeEnv: argv.mode,
     },
     plugins: [new BundleAnalyzerPlugin({ analyzerMode: 'disabled' })],
+    externals: ['js-cookie'],
   };
 };
