@@ -1,11 +1,14 @@
 {
-  "name": "twyla-widget-core",
-  "version": "0.9.0",
+  "name": "@twyla-ai/widget-core",
+  "version": "0.10",
   "description": "",
+  "publishConfig": {
+    "registry":"https://npm.pkg.github.com/"
+  },
   "main": "dist/twyla-widget-core.min.js",
   "scripts": {
     "build": "npm run clean && npx webpack --mode production",
-    "clean": "npx rimraf ./dist/twyla-widget-core.js",
+    "clean": "npx rimraf dist",
     "test": "npx jest --no-cache ./src"
   },
   "author": "Twyla GmbH",
