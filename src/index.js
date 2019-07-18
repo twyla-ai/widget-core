@@ -12,11 +12,14 @@ const getDefaultPayload = () => ({
     origin: window.location.origin || null,
     pathname: window.location.pathname || null,
   },
+  _logging_disabled: undefined,
 });
 
 const store = {
-  apiKey: undefined,
-  hookURL: undefined,
+  configuration: {
+    apiKey: undefined,
+    hookURL: undefined,
+  },
   notificationsChannelURL: undefined,
   userId: Cookies.get(COOKIE_NAME) || null,
   payload: getDefaultPayload(),
@@ -165,7 +168,7 @@ const setUpSocket = () => {
     store.socket.send(
       JSON.stringify({
         user_id_cookie: store.userId,
-        api_key: store.apiKey,
+        api_key: store.configuration.apiKey,
       })
     );
   });
@@ -191,6 +194,7 @@ const setUpSocket = () => {
  * @param {object} configuration
  * @param {string} configuration.apiKey
  * @param {string} configuration.hookURL
+ * @param {boolean} configuration.logging
  * @param {function} onMessage callback for incoming messages
  * @returns {Promise<object>}
  * where object = {botName: string, history: Array[{content: string, made_by: string}]}
@@ -203,8 +207,14 @@ API.init = (configuration, onMessage) => {
     // store promise to resolve on establish session success
     store.promises.init = { resolve, reject };
 
-    store.apiKey = configuration.apiKey;
-    store.hookURL = configuration.hookURL;
+    store.configuration = {
+      apiKey: configuration.apiKey,
+      hookURL: configuration.hookURL,
+    };
+
+    if (configuration.logging === false) {
+      store.payload._logging_disabled = true;
+    }
 
     try {
       const { notificationsChannelURL, botName } = notificationsChannelURLFromHookURL(
@@ -229,8 +239,8 @@ API.init = (configuration, onMessage) => {
 API.send = message => {
   if (store.connected) {
     postMessage({
-      url: store.hookURL,
-      apiKey: store.apiKey,
+      url: store.configuration.hookURL,
+      apiKey: store.configuration.apiKey,
       input: message,
       userId: store.userId,
       payload: store.payload,
@@ -334,7 +344,7 @@ API.getUserId = () => {
  * @param {string} apiKey
  * @returns {Promise<Response | never>}
  */
-API.getBotName = (hookURL = store.hookURL, apiKey = store.apiKey) => {
+API.getBotName = (hookURL = store.configuration.hookURL, apiKey = store.configuration.apiKey) => {
   return fetch(`${hookURL}?key=${apiKey}`, {
     method: 'GET',
   }).then(response => {
@@ -368,8 +378,7 @@ API.endSession = () => {
 API.clearSession = () => {
   API.endSession();
   store.userId = null;
-  store.apiKey = null;
-  store.hookURL = null;
+  store.configuration = {};
   store.notificationsChannelURL = null;
   store.payload = getDefaultPayload();
   Cookies.remove(COOKIE_NAME);
