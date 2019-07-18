@@ -185,15 +185,15 @@ const setUpSocket = () => {
 };
 
 /**
- * Initialises the widget
- * Resolves promise on connection success with botName and history
- * Rejects promise if hookURL is of invalid format
- * @param configuration {Object}
- * @param configuration.apiKey {String}
- * @param configuration.hookURL {String}
- * @param onMessage {Function} callback for incoming messages
+ * - Initialises the widget
+ * - Resolves promise on connection success with botName and history
+ * - Rejects promise if hookURL is of invalid format
+ * @param {object} configuration
+ * @param {string} configuration.apiKey
+ * @param {string} configuration.hookURL
+ * @param {function} onMessage callback for incoming messages
  * @returns {Promise<object>}
- * where object = {botName: String, history: Array[{content: String, made_by: String}]}
+ * where object = {botName: string, history: Array[{content: string, made_by: string}]}
  */
 API.init = (configuration, onMessage) => {
   store.inSession = true;
@@ -223,8 +223,8 @@ API.init = (configuration, onMessage) => {
 };
 
 /**
- * Send message
- * @param message {String}
+ * Sends a message if connected, else queues it
+ * @param {string} message
  */
 API.send = message => {
   if (store.connected) {
@@ -245,9 +245,9 @@ API.send = message => {
 };
 
 /**
- * To get the bot to say the intro message (if exists)
+ * - To get the bot to say the intro message (if exists)
  * without having the user to send a message first
- * Must be called after init
+ * - Must be called after init
  */
 API.initiateConversation = () => {
   API.send(CONVERSATION_STARTER);
@@ -255,17 +255,17 @@ API.initiateConversation = () => {
 
 /**
  * Sets callback for connection change
- * @param callback(isConnected: bool) {Function}
+ * @param {function} callback(isConnected: bool)
  */
 API.onConnectionChange = callback => {
   store.onConnectionChangeCallback = callback;
 };
 
 /**
- * Adds a property to the payload object
- * If property already exists, its value will be overwritten
- * @param key {string}
- * @param value {*}
+ * - Adds a property to the payload object
+ * - If the property already exists, its value will be overwritten
+ * @param {string} key
+ * @param {*} value
  */
 API.attachToPayload = (key, value) => {
   if (key === '' || key === null || key === undefined) {
@@ -282,10 +282,10 @@ API.attachToPayload = (key, value) => {
 };
 
 /**
- * Adds a property to the metadata object in payload
- * If property already exists, its value will be overwritten
- * @param key {string}
- * @param value {*}
+ * - Adds a property to the metadata object in payload
+ * - If the property already exists, its value will be overwritten
+ * @param {string} key
+ * @param {*} value
  */
 API.setMetadata = (key, value) => {
   if (key === '' || key === null || key === undefined) {
@@ -298,7 +298,7 @@ API.setMetadata = (key, value) => {
 
 /**
  * Removes a property from the payload object
- * @param key {string}
+ * @param {string} key
  */
 API.detachFromPayload = key => {
   if (key === '_meta') {
@@ -329,9 +329,9 @@ API.getUserId = () => {
 };
 
 /**
- * Returns Promise that resolves with bot name
- * @param hookURL
- * @param apiKey
+ * Returns a Promise that resolves with bot name
+ * @param {string} hookURL
+ * @param {string} apiKey
  * @returns {Promise<Response | never>}
  */
 API.getBotName = (hookURL = store.hookURL, apiKey = store.apiKey) => {
@@ -346,8 +346,8 @@ API.getBotName = (hookURL = store.hookURL, apiKey = store.apiKey) => {
 };
 
 /**
- * Closes socket connection for good
- * Clears callback references
+ * - Closes socket connection for good
+ * - Clears callback references
  */
 API.endSession = () => {
   // toggle session flag first so socket doesn't reconnect
@@ -362,8 +362,8 @@ API.endSession = () => {
 };
 
 /**
- * Ends session
- * Clears all data & cookie
+ * - Ends session
+ * - Clears all data & cookie
  */
 API.clearSession = () => {
   API.endSession();

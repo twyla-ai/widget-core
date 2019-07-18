@@ -2,6 +2,7 @@ import { isJSON } from './utils';
 import { CONVERSATION_STARTER, TemplateTypes } from './constants';
 
 /**
+ * @private
  * Removes CONVERSATION_STARTER
  * removes quick replies
  * maps template button payload message to template button title
@@ -13,8 +14,7 @@ export const cleanHistory = history => {
   let templateTitlesCache = {};
 
   const setTemplateTitleInCache = templateItem => {
-    if (templateItem.payload)
-      templateTitlesCache[templateItem.payload] = templateItem.title;
+    if (templateItem.payload) templateTitlesCache[templateItem.payload] = templateItem.title;
   };
 
   history.map(message => {
@@ -33,15 +33,11 @@ export const cleanHistory = history => {
         });
 
         template.payload.buttons.forEach(setTemplateTitleInCache);
-      } else if (
-        template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY
-      ) {
+      } else if (template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY) {
         template.quick_replies.forEach(setTemplateTitleInCache);
 
         message.content = template.text;
-      } else if (
-        template.template_type === TemplateTypes.FB_MESSENGER_GENERIC
-      ) {
+      } else if (template.template_type === TemplateTypes.FB_MESSENGER_GENERIC) {
         template.payload.elements.forEach(element => {
           if (element.buttons) {
             element.buttons.forEach(setTemplateTitleInCache);
