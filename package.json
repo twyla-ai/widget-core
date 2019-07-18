@@ -9,6 +9,7 @@
   "scripts": {
     "build": "npm run clean && npx webpack --mode production",
     "clean": "npx rimraf dist",
+    "documentation": "node document.js",
     "pre-publish": "npm run build",
     "test": "npx jest --no-cache ./src"
   },
@@ -23,6 +24,7 @@
     "@babel/preset-env": "^7.0.0",
     "babel-core": "^7.0.0-bridge.0",
     "babel-loader": "^8.0.2",
+    "documentation": "^12.0.2",
     "husky": "^3.0.0",
     "jest": "^24.8.0",
     "mock-socket": "^8.0.2",
