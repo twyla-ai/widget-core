@@ -12,7 +12,6 @@ const getDefaultPayload = () => ({
     origin: window.location.origin || null,
     pathname: window.location.pathname || null,
   },
-  _logging_disabled: undefined,
 });
 
 const store = {
@@ -322,6 +321,26 @@ API.detachFromPayload = key => {
   }
 
   delete store.payload[key];
+};
+
+/**
+ * Turn logging on or off
+ * @param {boolean} value true|false
+ */
+API.toggleLogging = value => {
+  if (value === true) {
+    delete store.payload._logging_disabled;
+  } else if (value === false) {
+    store.payload._logging_disabled = true;
+  }
+};
+
+/**
+ * Check if logging is on or off
+ * @returns {boolean}
+ */
+API.isLogging = () => {
+  return !!store.payload._logging_disabled;
 };
 
 /**
