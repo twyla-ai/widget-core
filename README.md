@@ -21,13 +21,13 @@ init({ apiKey, hookURL })
 send('I need to book a ticket');
 ```
 
-## API
-
-See [API Documentation](API.md).
-
 _Note:_ Try to call `init` only when user has to chat with the bot (typically on chat window open) rather than on website/app load. Once initialised, the connection will be active in background for the lifetime of the website/app and will automatically reconnect on outages such as network loss. Call `endSession` to finish the chat in cases such as navigating to a page that doesn't have the chat feature. If you have to resume the chat on re-navigating to the page(s) with the chat, you need not re initialise the connection, instead you can hold the reference to the onMessage handler to continue to receive new messages. If you cannot then call endSession on chat page leave and re initialise on chat page enter.
 <br/><br/>
 Use the `clearSession` API to start a fresh chat (conversation history will be deleted) when user revisits the website/app. And also if you have multiple bots, use `clearSession` before talking to a new bot.
+
+## API
+
+See [API Documentation](API.md).
 
 ## Browser Support
 
