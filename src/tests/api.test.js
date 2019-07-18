@@ -9,6 +9,8 @@ import {
   onConnectionChange,
   send,
   endSession,
+  isLogging,
+  setLogging,
 } from '../index';
 import { WebSocket, Server } from 'mock-socket';
 import { CONVERSATION_STARTER } from '../constants';
@@ -267,14 +269,11 @@ describe('API test', () => {
     });
   });
 
-  test('turn off logging', done => {
+  test('toggle logging', done => {
     init({ ...configuration, logging: false }, onMessage).then(() => {
-      expect(global.fetch.mock.calls.length).toEqual(1);
+      expect(isLogging()).toEqual(false);
 
       send('blue');
-
-      expect(global.fetch.mock.calls.length).toEqual(2);
-      expect(global.fetch.mock.calls[1][0]).toEqual(configuration.hookURL);
 
       let requestPayload = global.fetch.mock.calls[1][1];
       expect(requestPayload.method).toEqual('POST');
@@ -288,6 +287,25 @@ describe('API test', () => {
           _logging_disabled: true,
         },
         input: 'blue',
+        user_id_cookie: 'fakeUserIdCookie',
+      });
+
+      setLogging(true);
+
+      expect(isLogging()).toEqual(true);
+
+      send('green');
+
+      requestPayload = global.fetch.mock.calls[2][1];
+      expect(JSON.parse(requestPayload.body)).toEqual({
+        api_key: 'fakeApiKey',
+        data: {
+          _meta: {
+            origin: 'https://jest-test.com',
+            pathname: '/widget.html',
+          },
+        },
+        input: 'green',
         user_id_cookie: 'fakeUserIdCookie',
       });
 

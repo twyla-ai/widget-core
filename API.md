@@ -66,7 +66,7 @@ Removes a property from the payload object
 
 - `key` **[string][2]**
 
-## toggleLogging
+## setLogging
 
 Turn logging on or off
 

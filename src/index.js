@@ -327,7 +327,7 @@ API.detachFromPayload = key => {
  * Turn logging on or off
  * @param {boolean} value true|false
  */
-API.toggleLogging = value => {
+API.setLogging = value => {
   if (value === true) {
     delete store.payload._logging_disabled;
   } else if (value === false) {
@@ -340,7 +340,7 @@ API.toggleLogging = value => {
  * @returns {boolean}
  */
 API.isLogging = () => {
-  return !!store.payload._logging_disabled;
+  return !!!store.payload._logging_disabled;
 };
 
 /**
@@ -413,6 +413,8 @@ export const {
   attachToPayload,
   detachFromPayload,
   setMetadata,
+  isLogging,
+  setLogging,
   getUserId,
   getBotName,
   clearSession,
