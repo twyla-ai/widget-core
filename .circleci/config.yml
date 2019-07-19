@@ -3,15 +3,50 @@ jobs:
   test:
     docker:
       - image: circleci/node:10
+    resource_class: small
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - key-{{ checksum "package.json" }}
       - run:
           name: run test
           command: |
             npm ci
             npm run test
+      - save_cache:
+          key: key-{{ checksum "package.json" }}
+          paths:
+            - ~/.npm
+            - ~/project/node_modules
+  publish:
+    docker:
+      - image: circleci/node:10
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - key-{{ checksum "package.json" }}
+      - run:
+          name: publish release package
+          command: |
+            npm ci
+            npm run build
+
+            # publish to npm registry
+            export NPM_TOKEN=${NPM_PUBLISH_TOKEN}
+            npm publish --access public
+
 workflows:
   version: 2.1
   ci-checks:
     jobs:
       - test
+      - publish:
+          name: "publish-release"
+          context: Build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
