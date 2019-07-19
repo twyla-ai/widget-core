@@ -2,9 +2,6 @@
   "name": "@twyla-ai/widget-core",
   "version": "0.10.0",
   "description": "Twyla Widget Core",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "main": "dist/index.js",
   "scripts": {
     "build": "npm run clean && npx webpack --mode production",
