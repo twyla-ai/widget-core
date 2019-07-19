@@ -9,8 +9,8 @@ import {
   onConnectionChange,
   send,
   endSession,
-  isLogging,
-  setLogging,
+  isConversationLogging,
+  setConversationLogging,
 } from '../index';
 import { WebSocket, Server } from 'mock-socket';
 import { CONVERSATION_STARTER } from '../constants';
@@ -270,8 +270,8 @@ describe('API test', () => {
   });
 
   test('toggle logging', done => {
-    init({ ...configuration, logging: false }, onMessage).then(() => {
-      expect(isLogging()).toEqual(false);
+    init({ ...configuration, conversationLogging: false }, onMessage).then(() => {
+      expect(isConversationLogging()).toEqual(false);
 
       send('blue');
 
@@ -290,9 +290,9 @@ describe('API test', () => {
         user_id_cookie: 'fakeUserIdCookie',
       });
 
-      setLogging(true);
+      setConversationLogging(true);
 
-      expect(isLogging()).toEqual(true);
+      expect(isConversationLogging()).toEqual(true);
 
       send('green');
 

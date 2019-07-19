@@ -11,7 +11,7 @@
 - `configuration` **[object][1]**
   - `configuration.apiKey` **[string][2]**
   - `configuration.hookURL` **[string][2]**
-  - `configuration.logging` **[boolean][3]**
+  - `configuration.conversationLogging` **[boolean][3]**
 - `onMessage` **[function][4]** callback for incoming messages
 
 Returns **[Promise][5]&lt;[object][1]>** where object = {botName: string, history: Array[{content: string, made_by: string}]}
@@ -66,17 +66,17 @@ Removes a property from the payload object
 
 - `key` **[string][2]**
 
-## setLogging
+## setConversationLogging
 
-Turn logging on or off
+Turn conversation logging on or off
 
 ### Parameters
 
 - `value` **[boolean][3]** true|false
 
-## isLogging
+## isConversationLogging
 
-Check if logging is on or off
+Check if conversation logging is on or off
 
 Returns **[boolean][3]**
 

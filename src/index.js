@@ -193,7 +193,7 @@ const setUpSocket = () => {
  * @param {object} configuration
  * @param {string} configuration.apiKey
  * @param {string} configuration.hookURL
- * @param {boolean} configuration.logging
+ * @param {boolean} configuration.conversationLogging
  * @param {function} onMessage callback for incoming messages
  * @returns {Promise<object>}
  * where object = {botName: string, history: Array[{content: string, made_by: string}]}
@@ -211,7 +211,7 @@ API.init = (configuration, onMessage) => {
       hookURL: configuration.hookURL,
     };
 
-    if (configuration.logging === false) {
+    if (configuration.conversationLogging === false) {
       store.payload._logging_disabled = true;
     }
 
@@ -324,10 +324,10 @@ API.detachFromPayload = key => {
 };
 
 /**
- * Turn logging on or off
+ * Turn conversation logging on or off
  * @param {boolean} value true|false
  */
-API.setLogging = value => {
+API.setConversationLogging = value => {
   if (value === true) {
     delete store.payload._logging_disabled;
   } else if (value === false) {
@@ -336,10 +336,10 @@ API.setLogging = value => {
 };
 
 /**
- * Check if logging is on or off
+ * Check if conversation logging is on or off
  * @returns {boolean}
  */
-API.isLogging = () => {
+API.isConversationLogging = () => {
   return !!!store.payload._logging_disabled;
 };
 
@@ -413,8 +413,8 @@ export const {
   attachToPayload,
   detachFromPayload,
   setMetadata,
-  isLogging,
-  setLogging,
+  isConversationLogging,
+  setConversationLogging,
   getUserId,
   getBotName,
   clearSession,
