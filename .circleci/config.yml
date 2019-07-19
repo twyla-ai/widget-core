@@ -57,7 +57,7 @@ jobs:
           name: publish release package to npm registry
           command: |
             echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc
-            npm publish --access public
+            npm run publish
 
 workflows:
   version: 2.1
