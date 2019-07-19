@@ -9,6 +9,8 @@ import {
   onConnectionChange,
   send,
   endSession,
+  isConversationLogging,
+  setConversationLogging,
 } from '../index';
 import { WebSocket, Server } from 'mock-socket';
 import { CONVERSATION_STARTER } from '../constants';
@@ -70,9 +72,7 @@ describe('API test', () => {
 
   const mockFetch = url => {
     let json = f => f;
-    const fakeUrl = `https://api.demo.twyla.io/widget-hook/massive-dynamics/templates?key=${
-      configuration.apiKey
-    }`;
+    const fakeUrl = `https://api.demo.twyla.io/widget-hook/massive-dynamics/templates?key=${configuration.apiKey}`;
 
     if (url === fakeUrl) {
       json = () => ({ name: 'Templates' });
@@ -229,14 +229,85 @@ describe('API test', () => {
 
       expect(global.fetch.mock.calls.length).toEqual(2);
       expect(global.fetch.mock.calls[1][0]).toEqual(configuration.hookURL);
-      expect(global.fetch.mock.calls[1][1]).toEqual(postMsg('blue', { fruit: 'apple' }));
+
+      let requestPayload = global.fetch.mock.calls[1][1];
+      expect(requestPayload.method).toEqual('POST');
+      expect(JSON.parse(requestPayload.body)).toEqual({
+        api_key: 'fakeApiKey',
+        data: {
+          _meta: {
+            origin: 'https://jest-test.com',
+            pathname: '/widget.html',
+          },
+          fruit: 'apple',
+        },
+        input: 'blue',
+        user_id_cookie: 'fakeUserIdCookie',
+      });
 
       detachFromPayload('fruit');
       send('green');
 
       expect(global.fetch.mock.calls.length).toEqual(3);
       expect(global.fetch.mock.calls[2][0]).toEqual(configuration.hookURL);
-      expect(global.fetch.mock.calls[2][1]).toEqual(postMsg('green'));
+
+      requestPayload = global.fetch.mock.calls[2][1];
+      expect(requestPayload.method).toEqual('POST');
+      expect(JSON.parse(requestPayload.body)).toEqual({
+        api_key: 'fakeApiKey',
+        data: {
+          _meta: {
+            origin: 'https://jest-test.com',
+            pathname: '/widget.html',
+          },
+        },
+        input: 'green',
+        user_id_cookie: 'fakeUserIdCookie',
+      });
+
+      done();
+    });
+  });
+
+  test('toggle logging', done => {
+    init({ ...configuration, conversationLogging: false }, onMessage).then(() => {
+      expect(isConversationLogging()).toEqual(false);
+
+      send('blue');
+
+      let requestPayload = global.fetch.mock.calls[1][1];
+      expect(requestPayload.method).toEqual('POST');
+      expect(JSON.parse(requestPayload.body)).toEqual({
+        api_key: 'fakeApiKey',
+        data: {
+          _meta: {
+            origin: 'https://jest-test.com',
+            pathname: '/widget.html',
+          },
+          _logging_disabled: true,
+        },
+        input: 'blue',
+        user_id_cookie: 'fakeUserIdCookie',
+      });
+
+      setConversationLogging(true);
+
+      expect(isConversationLogging()).toEqual(true);
+
+      send('green');
+
+      requestPayload = global.fetch.mock.calls[2][1];
+      expect(JSON.parse(requestPayload.body)).toEqual({
+        api_key: 'fakeApiKey',
+        data: {
+          _meta: {
+            origin: 'https://jest-test.com',
+            pathname: '/widget.html',
+          },
+        },
+        input: 'green',
+        user_id_cookie: 'fakeUserIdCookie',
+      });
 
       done();
     });

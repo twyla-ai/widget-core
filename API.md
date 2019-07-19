@@ -11,9 +11,10 @@
 - `configuration` **[object][1]**
   - `configuration.apiKey` **[string][2]**
   - `configuration.hookURL` **[string][2]**
-- `onMessage` **[function][3]** callback for incoming messages
+  - `configuration.conversationLogging` **[boolean][3]**
+- `onMessage` **[function][4]** callback for incoming messages
 
-Returns **[Promise][4]&lt;[object][1]>** where object = {botName: string, history: Array[{content: string, made_by: string}]}
+Returns **[Promise][5]&lt;[object][1]>** where object = {botName: string, history: Array[{content: string, made_by: string}]}
 
 ## send
 
@@ -35,7 +36,7 @@ Sets callback for connection change
 
 ### Parameters
 
-- `callback` **[function][3]** (isConnected: bool)
+- `callback` **[function][4]** (isConnected: bool)
 
 ## attachToPayload
 
@@ -65,11 +66,25 @@ Removes a property from the payload object
 
 - `key` **[string][2]**
 
+## setConversationLogging
+
+Turn conversation logging on or off
+
+### Parameters
+
+- `value` **[boolean][3]** true|false
+
+## isConversationLogging
+
+Check if conversation logging is on or off
+
+Returns **[boolean][3]**
+
 ## getUserId
 
 Returns a promise that resolves if and when user_id_cookie is available
 
-Returns **[Promise][4]&lt;[string][2]>**
+Returns **[Promise][5]&lt;[string][2]>**
 
 ## getBotName
 
@@ -77,10 +92,10 @@ Returns a Promise that resolves with bot name
 
 ### Parameters
 
-- `hookURL` **[string][2]** (optional, default `store.hookURL`)
-- `apiKey` **[string][2]** (optional, default `store.apiKey`)
+- `hookURL` **[string][2]** (optional, default `store.configuration.hookURL`)
+- `apiKey` **[string][2]** (optional, default `store.configuration.apiKey`)
 
-Returns **[Promise][4]&lt;([Response][5] | never)>**
+Returns **[Promise][5]&lt;([Response][6] | never)>**
 
 ## endSession
 
@@ -94,6 +109,7 @@ Returns **[Promise][4]&lt;([Response][5] | never)>**
 
 [1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
 [2]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
-[3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
-[4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
-[5]: https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5
+[3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+[4]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
+[5]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
+[6]: https://developer.mozilla.org/docs/Web/Guide/HTML/HTML5
