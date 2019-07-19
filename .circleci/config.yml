@@ -1,8 +1,12 @@
 version: 2.1
-jobs:
-  test:
+executors:
+  npm-executor:
     docker:
       - image: circleci/node:10
+    working_directory: ~/workspace
+jobs:
+  install:
+    executor: npm-executor
     resource_class: small
     steps:
       - checkout
@@ -10,41 +14,76 @@ jobs:
           keys:
             - key-{{ checksum "package.json" }}
       - run:
-          name: run test
+          name: install
           command: |
             npm ci
-            npm run test
       - save_cache:
           key: key-{{ checksum "package.json" }}
           paths:
             - ~/.npm
-            - ~/project/node_modules
-  publish:
-    docker:
-      - image: circleci/node:10
+            - ~/workspace/node_modules
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - workspace
+            - .npm
+  test:
+    executor: npm-executor
+    resource_class: small
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - key-{{ checksum "package.json" }}
+      - attach_workspace:
+          at: ~/
       - run:
-          name: publish release package
+          name: run test
           command: |
-            npm ci
+            npm run test
+  build:
+    executor: npm-executor
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Build
+          command: |
             npm run build
-
-            # publish to npm registry
-            export NPM_TOKEN=${NPM_PUBLISH_TOKEN}
+  publish:
+    executor: npm-executor
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: publish release package to npm registry
+          command: |
+            echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc
             npm publish --access public
 
 workflows:
   version: 2.1
   ci-checks:
     jobs:
-      - test
+      - install:
+          filters:
+            tags:
+              only: /^v.*/
+      - test:
+          requires:
+            - install
+          filters:
+            tags:
+              only: /^v.*/
+      - build:
+          requires:
+            - install
+          filters:
+            tags:
+              only: /^v.*/
       - publish:
-          name: "publish-release"
           context: Build
+          requires:
+            - test
+            - build
           filters:
             tags:
               only: /^v.*/
