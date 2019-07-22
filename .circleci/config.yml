@@ -61,12 +61,10 @@ jobs:
       - run:
           name: publish release package to npm registry
           command: |
-            ls
-            echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" > .npmrc
-#            npm run publish
+            echo "//npm.pkg.github.com/:_authToken=${GITHUB_REGISTRY_ACCESS_TOKEN}" > .npmrc
+            npm publish
 
 workflows:
-  version: 2.1
   ci-checks:
     jobs:
       - install:
@@ -93,5 +91,5 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-#            branches:
-#              ignore: /.*/
+            branches:
+              ignore: /.*/
