@@ -3,9 +3,6 @@
   "version": "0.11.1",
   "description": "Twyla Widget Core",
   "main": "dist/index.js",
-  "publishConfig": {
-    "registry":"https://npm.pkg.github.com/"
-  },
   "scripts": {
     "build": "npm run clean && npx webpack --mode production",
     "clean": "npx rimraf dist",
