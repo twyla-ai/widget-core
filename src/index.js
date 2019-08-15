@@ -164,6 +164,10 @@ const setUpSocket = () => {
     store.connected = true;
     store.onConnectionChangeCallback(true);
 
+    if (store.socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
     store.socket.send(
       JSON.stringify({
         user_id_cookie: store.userId,
