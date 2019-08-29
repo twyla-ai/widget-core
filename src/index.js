@@ -14,7 +14,41 @@ const getDefaultPayload = () => ({
   },
 });
 
-const store = {
+export const chatHistory = {
+  get: () => {
+    const history = localStorage.getItem('TwylaWidget__chat_history');
+
+    let parsedHistory;
+
+    try {
+      parsedHistory = JSON.parse(history);
+    } catch {
+      chatHistory.clean();
+      return [];
+    }
+
+    if (!Array.isArray(parsedHistory)) {
+      chatHistory.clean();
+      return [];
+    }
+
+    return parsedHistory;
+  },
+
+  set: value => localStorage.setItem('TwylaWidget__chat_history', JSON.stringify(value)),
+
+  clean: () => chatHistory.set([]),
+
+  push: value => {
+    const history = chatHistory.get();
+
+    history.push(value);
+
+    chatHistory.set(history);
+  },
+};
+
+export const store = {
   configuration: {
     apiKey: undefined,
     hookURL: undefined,
@@ -30,6 +64,7 @@ const store = {
   },
 
   messageQueue: [],
+  history: undefined,
 
   connected: false,
   onConnectionChangeCallback: f => f,
@@ -85,12 +120,15 @@ export const notificationsChannelURLFromHookURL = hookURL => {
 const handleIncoming = event => {
   const data = JSON.parse(event.data);
 
-  // init response
-  // identified by presence of user_id_cookie
-  if (data.user_id_cookie) {
+  const isInitResponse = data.user_id_cookie;
+  const isErrorResponse = data.error;
+
+  if (isInitResponse) {
     if (!store.userId || store.userId !== data.user_id_cookie) {
       store.userId = data.user_id_cookie;
       Cookies.set(COOKIE_NAME, store.userId);
+
+      chatHistory.clean();
 
       if (store.promises.getUserId) {
         store.promises.getUserId.resolve(store.userId);
@@ -98,9 +136,8 @@ const handleIncoming = event => {
       }
     }
 
-    // if messages were queued then they need to be appended after history
     if (store.promises.init.resolve) {
-      const history = cleanHistory(data.history);
+      const history = cleanHistory(chatHistory.get());
 
       store.messageQueue.forEach(message => {
         if (message !== CONVERSATION_STARTER) {
@@ -110,16 +147,17 @@ const handleIncoming = event => {
 
       getBotName()
         .then(response => {
-          // before getBotName resolves,
-          // if clearSession was called and init will be undefined
-          if (store.promises.init.resolve) {
-            store.promises.init.resolve({
-              botName: response.name,
-              history,
-            });
-
-            clearInitPromise();
+          // if clearSession was called before getBotName resolves
+          if (!store.promises.init.resolve) {
+            return;
           }
+
+          store.promises.init.resolve({
+            botName: response.name,
+            history,
+          });
+
+          clearInitPromise();
         })
         .catch(error => {
           handleError('Get metadata error:', error);
@@ -135,24 +173,35 @@ const handleIncoming = event => {
 
     if (store.messageQueue.length) {
       const toPost = [...store.messageQueue];
-      store.messageQueue = [];
 
       toPost.forEach(send);
+
+      store.messageQueue = [];
     }
-  } else if (data.error) {
+  } else if (isErrorResponse) {
     store.userId = null;
   } else {
     const isMessageJSON = isJSON(data.emission);
+    let textFromBot;
+
     if (isMessageJSON.result) {
       const template = isMessageJSON.json;
+
       if (template.template_type === TemplateTypes.FB_MESSENGER_BUTTON) {
-        store.onMessage(template.payload.text);
+        textFromBot = template.payload.text;
+
+        store.onMessage(textFromBot);
       } else if (template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY) {
-        store.onMessage(template.text);
+        textFromBot = template.text;
+
+        store.onMessage(textFromBot);
       }
     }
 
-    store.onMessage(data.emission);
+    textFromBot = data.emission;
+
+    store.onMessage(textFromBot);
+    chatHistory.push({ made_by: 'chatbot', content: textFromBot });
   }
 };
 
@@ -244,6 +293,8 @@ API.send = message => {
       userId: store.userId,
       payload: store.payload,
     });
+
+    chatHistory.push({ made_by: 'user', content: message });
   } else {
     if (store.messageQueue.length === 1 && store.messageQueue[0] === CONVERSATION_STARTER) {
       store.messageQueue = [];
@@ -381,12 +432,14 @@ API.getBotName = (hookURL = store.configuration.hookURL, apiKey = store.configur
 API.endSession = () => {
   // toggle session flag first so socket doesn't reconnect
   store.inSession = false;
+
   if (store.socket) store.socket.close();
 
   store.onMessage = f => f;
   store.promises.getUserId = null;
   store.messageQueue = [];
   store.onConnectionChangeCallback = f => f;
+
   clearInitPromise();
 };
 
@@ -396,11 +449,14 @@ API.endSession = () => {
  */
 API.clearSession = () => {
   API.endSession();
+
   store.userId = null;
   store.configuration = {};
   store.notificationsChannelURL = null;
   store.payload = getDefaultPayload();
+
   Cookies.remove(COOKIE_NAME);
+  chatHistory.clean();
 };
 
 export { version } from '../package.json';
