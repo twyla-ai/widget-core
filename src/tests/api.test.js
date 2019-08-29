@@ -13,47 +13,22 @@ import {
   setConversationLogging,
 } from '../index';
 import { WebSocket, Server } from 'mock-socket';
+import { store, chatHistory } from '../index';
 import { CONVERSATION_STARTER } from '../constants';
 
 global.fetch = jest.fn().mockImplementation(url => {
   let responseJSON = f => f;
+
   if (url === 'https://api.demo.twyla.io/widget-hook/massive-dynamics/templates?key=fakeApiKey') {
     responseJSON = () => ({ name: 'Templates' });
   }
+
   return new Promise(resolve => {
     resolve({ ok: true, json: responseJSON });
   });
 });
 
 global.WebSocket = WebSocket;
-
-describe('API error test', () => {
-  const consoleError = console.error;
-
-  beforeEach(() => {
-    console.error = jest.fn();
-  });
-
-  afterEach(() => {
-    console.error = consoleError;
-  });
-
-  test('Rejects init for invalid Hook URL', done => {
-    const errorConfiguration = {
-      apiKey: 'fakeApiKey',
-      hookURL: '',
-    };
-
-    init(errorConfiguration).then(
-      f => f,
-      error => {
-        expect(error).toEqual('Invalid hook URL');
-        expect(console.error).toHaveBeenCalled();
-        done();
-      }
-    );
-  });
-});
 
 describe('API test', () => {
   let mockServer;
@@ -123,7 +98,7 @@ describe('API test', () => {
       socket.on('message', data => {
         expect(data).toEqual(
           JSON.stringify({
-            user_id_cookie: null,
+            user_id_cookie: store.userId,
             api_key: configuration.apiKey,
           })
         );
@@ -131,7 +106,6 @@ describe('API test', () => {
         socket.send(
           JSON.stringify({
             user_id_cookie: fakeCookie,
-            history: [{ made_by: 'user', content: 'a' }, { made_by: 'chatbot', content: 'b' }],
           })
         );
       });
@@ -141,23 +115,48 @@ describe('API test', () => {
   afterEach(() => {
     mockServer.stop();
 
-    clearSession(1000);
+    clearSession();
   });
 
-  test('promise params', done => {
+  test('promise params, new session', done => {
     const queuedMsg = 'queuedMessage';
+
+    chatHistory.push({ content: 'a', made_by: 'user' });
+    chatHistory.push({ content: 'b', made_by: 'chatbot' });
 
     init(configuration, onMessage).then(({ botName, history }) => {
       expect(botName).toEqual('Templates');
-      expect(history).toEqual([
-        { made_by: 'user', content: 'a' },
-        { made_by: 'chatbot', content: 'b' },
-        { content: 'queuedMessage', made_by: 'user' },
-      ]);
+      expect(history).toEqual([{ content: queuedMsg, made_by: 'user' }]);
 
       expect(global.fetch.mock.calls.length).toEqual(2);
       expect(global.fetch.mock.calls[1][0]).toEqual(configuration.hookURL);
       expect(global.fetch.mock.calls[1][1]).toEqual(postMsg(queuedMsg));
+
+      done();
+    });
+
+    send(queuedMsg);
+  });
+
+  test('promise params, existing session', done => {
+    const queuedMsg = 'queuedMessage';
+
+    store.userId = fakeCookie;
+
+    chatHistory.push({ content: 'a', made_by: 'user' });
+    chatHistory.push({ content: 'b', made_by: 'chatbot' });
+
+    init(configuration, onMessage).then(({ botName, history }) => {
+      expect(botName).toEqual('Templates');
+      expect(history).toEqual([
+        { content: 'a', made_by: 'user' },
+        { content: 'b', made_by: 'chatbot' },
+        { content: queuedMsg, made_by: 'user' },
+      ]);
+
+      expect(global.fetch.mock.calls.length).toEqual(2);
+      expect(global.fetch.mock.calls[0][0]).toEqual(configuration.hookURL);
+      expect(global.fetch.mock.calls[0][1]).toEqual(postMsg(queuedMsg));
 
       done();
     });
@@ -343,5 +342,33 @@ describe('API test', () => {
 
       done();
     });
+  });
+});
+
+describe('API error test', () => {
+  const consoleError = console.error;
+
+  beforeEach(() => {
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    console.error = consoleError;
+  });
+
+  test('Rejects init for invalid Hook URL', done => {
+    const errorConfiguration = {
+      apiKey: 'fakeApiKey',
+      hookURL: '',
+    };
+
+    init(errorConfiguration).then(
+      f => f,
+      error => {
+        expect(error).toEqual('Invalid hook URL');
+        expect(console.error).toHaveBeenCalled();
+        done();
+      }
+    );
   });
 });
