@@ -1,4 +1,3 @@
-export const COOKIE_NAME = 'TwylaWidgetSessionId';
 export const CONVERSATION_STARTER = '__CONVERSATION_STARTER__';
 export const RETRY_TIMEOUT = 2000;
 

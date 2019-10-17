@@ -1,4 +1,4 @@
-import { notificationsChannelURLFromHookURL } from '../index';
+import { notificationsChannelURLFromHookURL } from '../utils';
 
 describe('notificationsChannelURLFromHookURL tests', () => {
   test('Old domains tests', () => {
@@ -11,6 +11,8 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       botName: 'Z10',
       notificationsChannelURL:
         'wss://notification.production.twyla.io/widget-notifications/massive-dynamic/z10',
+      projectName: 'z10',
+      workspaceName: 'massive-dynamic',
     });
 
     // demo
@@ -22,6 +24,8 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       botName: 'Z10',
       notificationsChannelURL:
         'wss://notification.demo.twyla.io/widget-notifications/massive-dynamic/z10',
+      projectName: 'z10',
+      workspaceName: 'massive-dynamic',
     });
   });
 
@@ -35,6 +39,8 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       botName: 'Z10',
       notificationsChannelURL:
         'wss://notification.rawhide.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
+      projectName: 'z10',
+      workspaceName: 'massive-dynamic',
     });
 
     // production
@@ -46,6 +52,8 @@ describe('notificationsChannelURLFromHookURL tests', () => {
       botName: 'Z10',
       notificationsChannelURL:
         'wss://notification.canvas.twyla.ai/widget-notifications/massive-dynamic/z10',
+      projectName: 'z10',
+      workspaceName: 'massive-dynamic',
     });
   });
 });

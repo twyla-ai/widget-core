@@ -1,6 +1,10 @@
 import { handleError } from './utils';
 
-const postMessage = ({ url, apiKey, input, userId, payload }) => {
+/**
+ * @private
+ */
+// eslint-disable-next-line import/prefer-default-export
+export const postMessage = ({ url, apiKey, input, userId, payload }) => {
   fetch(url, {
     method: 'POST',
     body: JSON.stringify({
@@ -26,5 +30,3 @@ const postMessage = ({ url, apiKey, input, userId, payload }) => {
       }
     });
 };
-
-export default postMessage;
