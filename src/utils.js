@@ -106,6 +106,7 @@ export const cleanHistory = history => {
         cleanedHistory.push({
           content: template.payload.text,
           made_by: 'chatbot',
+          debug: message.debug,
         });
 
         template.payload.buttons.forEach(setTemplateTitleInCache);
@@ -124,7 +125,11 @@ export const cleanHistory = history => {
       updatedMessage.content = templateTitlesCache[updatedMessage.content];
     }
 
-    cleanedHistory.push({ content: updatedMessage.content, made_by: updatedMessage.made_by });
+    cleanedHistory.push({
+      content: updatedMessage.content,
+      made_by: updatedMessage.made_by,
+      debug: message.debug,
+    });
   });
 
   return cleanedHistory;
