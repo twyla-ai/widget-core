@@ -38,10 +38,13 @@ class WidgetCore {
     // flag used to retry socket connection only if true
     this.inSession = false;
 
-    const { apiKey, hookURL } = configuration;
+    const { apiKey, hookURL, conversationLogging, conversationDebug } = configuration;
     this.configuration = { apiKey, hookURL };
-    if (configuration.conversationLogging === false) {
+    if (conversationLogging === false) {
       this.payload._logging_disabled = true;
+    }
+    if (conversationDebug === true) {
+      this.payload._conversation_debug = true;
     }
 
     try {
