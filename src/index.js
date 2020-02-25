@@ -86,35 +86,10 @@ const rejectInitPromise = error => {
 };
 
 export const notificationsChannelURLFromHookURL = hookURL => {
-  const hookURLTokens = hookURL.split('/');
-  const botName = hookURLTokens[5]
-    .split('/')
-    .pop()
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.substr(1))
-    .join(' ');
-  let environment;
-  let notificationsChannelURL;
-
-  // TODO remove block once migration is complete
-  if (hookURL.includes('twyla.io')) {
-    environment = /api\.(.*)\.twyla/.exec(hookURL)[1];
-
-    notificationsChannelURL = `wss://notification.${environment}.twyla.io/widget-notifications/${
-      hookURLTokens[4]
-    }/${hookURLTokens[5]}`;
-  } else {
-    let environmentSearch = /api\.(.*)\.canvas/.exec(hookURL);
-
-    if (!environmentSearch) environment = 'production';
-    else environment = environmentSearch[1];
-
-    notificationsChannelURL = `wss://notification.${
-      !environmentSearch ? '' : environment + '.'
-    }canvas.twyla.ai/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`;
+  if (!hookURL) {
+    throw new TypeError('Hook URL cannot be empty');
   }
-
-  return { botName, notificationsChannelURL };
+  return hookURL.replace('/widget-hook/', '/widget-notifications/').replace(/^http/, 'ws');
 };
 
 const handleIncoming = event => {
@@ -269,11 +244,7 @@ API.init = (configuration, onMessage) => {
     }
 
     try {
-      const { notificationsChannelURL, botName } = notificationsChannelURLFromHookURL(
-        configuration.hookURL
-      );
-      store.notificationsChannelURL = notificationsChannelURL;
-      store.botName = botName;
+      store.notificationsChannelURL = notificationsChannelURLFromHookURL(configuration.hookURL);
     } catch (e) {
       rejectInitPromise('Invalid hook URL');
       handleError('Invalid hook URL', configuration);
