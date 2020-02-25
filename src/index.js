@@ -3,7 +3,6 @@ import postMessage from './post-message';
 import { cleanHistory } from './helpers';
 import { handleError, isJSON } from './utils';
 import { CONVERSATION_STARTER, COOKIE_NAME, RETRY_TIMEOUT, TemplateTypes } from './constants';
-import { version } from '../package.json';
 
 const API = {};
 
