@@ -1,0 +1,19 @@
+name: Main Workflow
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Install package dependencies
+        run: npm ci
+      - name: Execute Test Suite
+        run: npm run test
+      - name: Verify Package Build
+        run: npm run build
