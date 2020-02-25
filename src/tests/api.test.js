@@ -19,7 +19,10 @@ import { CONVERSATION_STARTER } from '../constants';
 global.fetch = jest.fn().mockImplementation(url => {
   let responseJSON = f => f;
 
-  if (url === 'https://api.demo.twyla.io/widget-hook/massive-dynamics/templates?key=fakeApiKey') {
+  if (
+    url ===
+    'https://api.rawhide.canvas.twyla.ai/widget-hook/massive-dynamics/templates?key=fakeApiKey'
+  ) {
     responseJSON = () => ({ name: 'Templates' });
   }
 
@@ -39,15 +42,15 @@ describe('API test', () => {
   const origin = 'https://jest-test.com';
   const pathname = '/widget.html';
   const fakeCookie = 'fakeUserIdCookie';
-  const fakeWsURL = `wss://notification.demo.twyla.io/widget-notifications/massive-dynamics/templates`;
+  const fakeWsURL = `wss://api.rawhide.canvas.twyla.ai/widget-notifications/massive-dynamics/templates`;
   const configuration = {
     apiKey: 'fakeApiKey',
-    hookURL: 'https://api.demo.twyla.io/widget-hook/massive-dynamics/templates',
+    hookURL: 'https://api.rawhide.canvas.twyla.ai/widget-hook/massive-dynamics/templates',
   };
 
   const mockFetch = url => {
     let json = f => f;
-    const fakeUrl = `https://api.demo.twyla.io/widget-hook/massive-dynamics/templates?key=${configuration.apiKey}`;
+    const fakeUrl = `https://api.rawhide.canvas.twyla.ai/widget-hook/massive-dynamics/templates?key=${configuration.apiKey}`;
 
     if (url === fakeUrl) {
       json = () => ({ name: 'Templates' });
