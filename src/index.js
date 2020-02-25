@@ -206,6 +206,10 @@ const handleIncoming = event => {
 };
 
 const setUpSocket = () => {
+  if (!store.notificationsChannelURL) {
+    // if url is not available do not create socket connection
+    return;
+  }
   store.socket = new WebSocket(store.notificationsChannelURL);
   store.socket.onmessage = handleIncoming;
 
