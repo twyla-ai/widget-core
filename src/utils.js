@@ -24,26 +24,16 @@ export const notificationsChannelURLFromHookURL = hookURL => {
   let environment;
   let notificationsChannelURL;
 
-  // TODO remove block once migration is complete
-  if (hookURL.includes('twyla.io')) {
-    [, environment] = /api\.(.*)\.twyla/.exec(hookURL);
+  const environmentSearch = /api\.(.*)\.canvas/.exec(hookURL);
 
-    notificationsChannelURL = `wss://notification.${environment}.twyla.io/widget-notifications/${
-      hookURLTokens[4]
-    }/${hookURLTokens[5]}`;
-  } else {
-    const environmentSearch = /api\.(.*)\.canvas/.exec(hookURL);
+  if (!environmentSearch) environment = 'production';
+  else [, environment] = environmentSearch;
 
-    if (!environmentSearch) environment = 'production';
-    else [, environment] = environmentSearch;
-
-    notificationsChannelURL = `wss://notification.${
-      !environmentSearch ? '' : `${environment}.`
-    }canvas.twyla.ai/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`;
-  }
+  notificationsChannelURL = `wss://notification.${
+    !environmentSearch ? '' : `${environment}.`
+  }canvas.twyla.ai/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`;
 
   return {
-    botName,
     notificationsChannelURL,
     workspaceName: hookURLTokens[4],
     projectName: hookURLTokens[5],

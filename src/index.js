@@ -50,12 +50,10 @@ class WidgetCore {
     try {
       const {
         notificationsChannelURL,
-        botName,
         workspaceName,
         projectName,
       } = notificationsChannelURLFromHookURL(this.configuration.hookURL);
       this.notificationsChannelURL = notificationsChannelURL;
-      this.botName = botName;
       this.cookieManager = new CookieManager(workspaceName, projectName);
       this.userId = this.cookieManager.get();
 
