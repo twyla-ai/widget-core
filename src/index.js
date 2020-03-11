@@ -38,10 +38,13 @@ class WidgetCore {
     // flag used to retry socket connection only if true
     this.inSession = false;
 
-    const { apiKey, hookURL } = configuration;
+    const { apiKey, hookURL, conversationLogging, conversationDebug } = configuration;
     this.configuration = { apiKey, hookURL };
-    if (configuration.conversationLogging === false) {
+    if (conversationLogging === false) {
       this.payload._logging_disabled = true;
+    }
+    if (conversationDebug === true) {
+      this.payload._conversation_debug = true;
     }
 
     try {
@@ -163,7 +166,8 @@ class WidgetCore {
     } else if (isErrorResponse) {
       this.userId = null;
     } else {
-      const isMessageJSON = isJSON(data.emission);
+      const { emission, debug } = data;
+      const isMessageJSON = isJSON(emission);
       let textFromBot;
 
       if (isMessageJSON.result) {
@@ -172,18 +176,18 @@ class WidgetCore {
         if (template.template_type === TemplateTypes.FB_MESSENGER_BUTTON) {
           textFromBot = template.payload.text;
 
-          this.onMessageCallback(textFromBot);
+          this.onMessageCallback(textFromBot, debug);
         } else if (template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY) {
           textFromBot = template.text;
 
-          this.onMessageCallback(textFromBot);
+          this.onMessageCallback(textFromBot, debug);
         }
       }
 
-      textFromBot = data.emission;
+      textFromBot = emission;
 
-      this.onMessageCallback(textFromBot);
-      this.chatHistoryManager.push({ made_by: 'chatbot', content: textFromBot });
+      this.onMessageCallback(textFromBot, debug);
+      this.chatHistoryManager.push({ made_by: 'chatbot', content: textFromBot, debug });
     }
   };
 
@@ -275,7 +279,6 @@ class WidgetCore {
     this.promises.getUserId = null;
     this.messageQueue = [];
     this.onConnectionChangeCallback = f => f;
-
     this._clearInitPromise();
   };
 
