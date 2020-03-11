@@ -1,4 +1,4 @@
-import { cleanHistory } from '../helpers';
+import { cleanHistory } from '../utils';
 import { CONVERSATION_STARTER } from '../constants';
 
 describe('Clean history tests', () => {
@@ -55,9 +55,7 @@ describe('Clean history tests', () => {
     text: 'text emission - quick replies template',
   };
 
-  const sampleQuickRepliesTemplateMessage = JSON.stringify(
-    sampleQuickRepliesTemplate
-  );
+  const sampleQuickRepliesTemplateMessage = JSON.stringify(sampleQuickRepliesTemplate);
 
   const sampleGenericTemplate = {
     template_type: 'fbmessenger.generic',

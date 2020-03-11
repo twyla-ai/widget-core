@@ -1,452 +1,395 @@
-import Cookies from 'js-cookie';
-import postMessage from './post-message';
-import { cleanHistory } from './helpers';
-import { handleError, isJSON } from './utils';
-import { CONVERSATION_STARTER, COOKIE_NAME, RETRY_TIMEOUT, TemplateTypes } from './constants';
+import {
+  cleanHistory,
+  getDefaultPayload,
+  handleError,
+  isJSON,
+  notificationsChannelURLFromHookURL,
+} from './utils';
+import { CONVERSATION_STARTER, RETRY_TIMEOUT, TemplateTypes } from './constants';
+import { postMessage } from './requests';
+import CookieManager from './CookieManager';
+import ChatHistoryManager from './ChatHistoryManager';
 
-const API = {};
+class WidgetCore {
+  /**
+   * @param {object} configuration
+   * @param {string} configuration.apiKey
+   * @param {string} configuration.hookURL
+   * @param {boolean} configuration.conversationLogging
+   */
+  constructor(configuration) {
+    this.configuration = {
+      apiKey: undefined,
+      hookURL: undefined,
+    };
+    this.notificationsChannelURL = undefined;
+    this.payload = getDefaultPayload();
+    this.promises = {
+      init: {
+        resolve: undefined,
+        reject: undefined,
+      },
+    };
+    this.messageQueue = [];
+    this.history = undefined;
+    this.connected = false;
+    this.onMessageCallback = f => f;
+    this.onConnectionChangeCallback = f => f;
+    // flag used to retry socket connection only if true
+    this.inSession = false;
 
-const getDefaultPayload = () => ({
-  _meta: {
-    origin: window.location.origin || null,
-    pathname: window.location.pathname || null,
-  },
-});
-
-export const chatHistory = {
-  get: () => {
-    const history = localStorage.getItem('TwylaWidget__chat_history');
-
-    let parsedHistory;
+    const { apiKey, hookURL, conversationLogging, conversationDebug } = configuration;
+    this.configuration = { apiKey, hookURL };
+    if (conversationLogging === false) {
+      this.payload._logging_disabled = true;
+    }
+    if (conversationDebug === true) {
+      this.payload._conversation_debug = true;
+    }
 
     try {
-      parsedHistory = JSON.parse(history);
-    } catch {
-      chatHistory.clean();
-      return [];
+      const {
+        notificationsChannelURL,
+        workspaceName,
+        projectName,
+      } = notificationsChannelURLFromHookURL(this.configuration.hookURL);
+      this.notificationsChannelURL = notificationsChannelURL;
+      this.cookieManager = new CookieManager(workspaceName, projectName);
+      this.userId = this.cookieManager.get();
+
+      this.chatHistoryManager = new ChatHistoryManager(workspaceName, projectName);
+    } catch (e) {
+      handleError('Invalid hook URL', this.configuration);
     }
+  }
 
-    if (!Array.isArray(parsedHistory)) {
-      chatHistory.clean();
-      return [];
-    }
-
-    return parsedHistory;
-  },
-
-  set: value => localStorage.setItem('TwylaWidget__chat_history', JSON.stringify(value)),
-
-  clean: () => chatHistory.set([]),
-
-  push: value => {
-    const history = chatHistory.get();
-
-    history.push(value);
-
-    chatHistory.set(history);
-  },
-};
-
-export const store = {
-  configuration: {
-    apiKey: undefined,
-    hookURL: undefined,
-  },
-  notificationsChannelURL: undefined,
-  userId: Cookies.get(COOKIE_NAME) || null,
-  payload: getDefaultPayload(),
-  promises: {
-    init: {
+  _clearInitPromise = () => {
+    this.promises.init = {
       resolve: undefined,
       reject: undefined,
-    },
-  },
-
-  messageQueue: [],
-  history: undefined,
-
-  connected: false,
-  onConnectionChangeCallback: f => f,
-
-  // flag used to retry socket connection only if true
-  inSession: false,
-};
-
-const clearInitPromise = () => {
-  store.promises.init = {
-    resolve: undefined,
-    reject: undefined,
-  };
-};
-
-const rejectInitPromise = error => {
-  store.promises.init.reject(error);
-  clearInitPromise();
-};
-
-export const notificationsChannelURLFromHookURL = hookURL => {
-  if (!hookURL) {
-    throw new TypeError('Hook URL cannot be empty');
-  }
-  return hookURL.replace('/widget-hook/', '/widget-notifications/').replace(/^http/, 'ws');
-};
-
-const handleIncoming = event => {
-  const data = JSON.parse(event.data);
-
-  const isInitResponse = data.user_id_cookie;
-  const isErrorResponse = data.error;
-
-  if (isInitResponse) {
-    if (!store.userId || store.userId !== data.user_id_cookie) {
-      store.userId = data.user_id_cookie;
-      Cookies.set(COOKIE_NAME, store.userId);
-
-      chatHistory.clean();
-
-      if (store.promises.getUserId) {
-        store.promises.getUserId.resolve(store.userId);
-        store.promises.getUserId = undefined;
-      }
-    }
-
-    if (store.promises.init.resolve) {
-      const history = cleanHistory(chatHistory.get());
-
-      store.messageQueue.forEach(message => {
-        if (message !== CONVERSATION_STARTER) {
-          history.push({ made_by: 'user', content: message });
-        }
-      });
-
-      getBotName()
-        .then(response => {
-          // if clearSession was called before getBotName resolves
-          if (!store.promises.init.resolve) {
-            return;
-          }
-
-          store.promises.init.resolve({
-            botName: response.name,
-            history,
-          });
-
-          clearInitPromise();
-        })
-        .catch(error => {
-          handleError('Get metadata error:', error);
-
-          store.promises.init.resolve({
-            botName: 'Twyla Bot',
-            history,
-          });
-
-          clearInitPromise();
-        });
-    }
-
-    if (store.messageQueue.length) {
-      const toPost = [...store.messageQueue];
-
-      toPost.forEach(send);
-
-      store.messageQueue = [];
-    }
-  } else if (isErrorResponse) {
-    store.userId = null;
-  } else {
-    const isMessageJSON = isJSON(data.emission);
-    let textFromBot;
-
-    if (isMessageJSON.result) {
-      const template = isMessageJSON.json;
-
-      if (template.template_type === TemplateTypes.FB_MESSENGER_BUTTON) {
-        textFromBot = template.payload.text;
-
-        store.onMessage(textFromBot);
-      } else if (template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY) {
-        textFromBot = template.text;
-
-        store.onMessage(textFromBot);
-      }
-    }
-
-    textFromBot = data.emission;
-
-    store.onMessage(textFromBot);
-    chatHistory.push({ made_by: 'chatbot', content: textFromBot });
-  }
-};
-
-const setUpSocket = () => {
-  if (!store.notificationsChannelURL) {
-    // if url is not available do not create socket connection
-    return;
-  }
-  store.socket = new WebSocket(store.notificationsChannelURL);
-  store.socket.onmessage = handleIncoming;
-
-  store.socket.addEventListener('open', () => {
-    store.connected = true;
-    store.onConnectionChangeCallback(true);
-
-    store.socket.send(
-      JSON.stringify({
-        user_id_cookie: store.userId,
-        api_key: store.configuration.apiKey,
-      })
-    );
-  });
-
-  store.socket.addEventListener('close', () => {
-    store.connected = false;
-
-    if (!store.inSession) {
-      return;
-    }
-    store.onConnectionChangeCallback(false);
-
-    setTimeout(() => {
-      setUpSocket();
-    }, RETRY_TIMEOUT);
-  });
-};
-
-/**
- * - Initialises the widget
- * - Resolves promise on connection success with botName and history
- * - Rejects promise if hookURL is of invalid format
- * @param {object} configuration
- * @param {string} configuration.apiKey
- * @param {string} configuration.hookURL
- * @param {boolean} configuration.conversationLogging
- * @param {function} onMessage callback for incoming messages
- * @returns {Promise<object>}
- * where object = {botName: string, history: Array[{content: string, made_by: string}]}
- */
-API.init = (configuration, onMessage) => {
-  store.inSession = true;
-  store.onMessage = onMessage;
-
-  return new Promise((resolve, reject) => {
-    // store promise to resolve on establish session success
-    store.promises.init = { resolve, reject };
-
-    store.configuration = {
-      apiKey: configuration.apiKey,
-      hookURL: configuration.hookURL,
     };
+  };
 
-    if (configuration.conversationLogging === false) {
-      store.payload._logging_disabled = true;
-    }
+  _setUpSocket = () => {
+    this.socket = new WebSocket(this.notificationsChannelURL);
+    this.socket.onmessage = this._handleIncoming;
 
-    try {
-      store.notificationsChannelURL = notificationsChannelURLFromHookURL(configuration.hookURL);
-    } catch (e) {
-      rejectInitPromise('Invalid hook URL');
-      handleError('Invalid hook URL', configuration);
-      return;
-    }
+    this.socket.addEventListener('open', () => {
+      this.connected = true;
+      this.onConnectionChangeCallback(true);
 
-    setUpSocket();
-  });
-};
-
-/**
- * Sends a message if connected, else queues it
- * @param {string} message
- */
-API.send = message => {
-  if (store.connected) {
-    postMessage({
-      url: store.configuration.hookURL,
-      apiKey: store.configuration.apiKey,
-      input: message,
-      userId: store.userId,
-      payload: store.payload,
+      this.socket.send(
+        JSON.stringify({
+          user_id_cookie: this.userId,
+          api_key: this.configuration.apiKey,
+        })
+      );
     });
 
-    chatHistory.push({ made_by: 'user', content: message });
-  } else {
-    if (store.messageQueue.length === 1 && store.messageQueue[0] === CONVERSATION_STARTER) {
-      store.messageQueue = [];
+    this.socket.addEventListener('close', () => {
+      this.connected = false;
+      this.onConnectionChangeCallback(false);
+
+      if (!this.inSession) {
+        return;
+      }
+
+      setTimeout(() => {
+        this._setUpSocket();
+      }, RETRY_TIMEOUT);
+    });
+  };
+
+  _handleIncoming = event => {
+    const data = JSON.parse(event.data);
+
+    const isInitResponse = data.user_id_cookie;
+    const isErrorResponse = data.error;
+
+    if (isInitResponse) {
+      if (!this.userId || this.userId !== data.user_id_cookie) {
+        this.userId = data.user_id_cookie;
+        this.cookieManager.set(this.userId);
+
+        this.chatHistoryManager.clean();
+
+        if (this.promises.getUserId) {
+          this.promises.getUserId.resolve(this.userId);
+          this.promises.getUserId = undefined;
+        }
+      }
+
+      if (this.promises.init.resolve) {
+        const history = cleanHistory(this.chatHistoryManager.get());
+
+        this.messageQueue.forEach(message => {
+          if (message !== CONVERSATION_STARTER) {
+            history.push({ made_by: 'user', content: message });
+          }
+        });
+
+        this.getBotName()
+          .then(response => {
+            // if clearSession was called before getBotName resolves
+            if (!this.promises.init.resolve) {
+              return;
+            }
+
+            this.promises.init.resolve({
+              botName: response.name,
+              history,
+            });
+
+            this._clearInitPromise();
+          })
+          .catch(error => {
+            handleError('Get metadata error:', error);
+
+            this.promises.init.resolve({
+              botName: 'Twyla Bot',
+              history,
+            });
+
+            this._clearInitPromise();
+          });
+      }
+
+      if (this.messageQueue.length) {
+        const toPost = [...this.messageQueue];
+
+        toPost.forEach(this.send);
+
+        this.messageQueue = [];
+      }
+    } else if (isErrorResponse) {
+      this.userId = null;
+    } else {
+      const { emission, debug } = data;
+      const isMessageJSON = isJSON(emission);
+      let textFromBot;
+
+      if (isMessageJSON.result) {
+        const template = isMessageJSON.json;
+
+        if (template.template_type === TemplateTypes.FB_MESSENGER_BUTTON) {
+          textFromBot = template.payload.text;
+
+          this.onMessageCallback(textFromBot, debug);
+        } else if (template.template_type === TemplateTypes.FB_MESSENGER_QUICK_REPLY) {
+          textFromBot = template.text;
+
+          this.onMessageCallback(textFromBot, debug);
+        }
+      }
+
+      textFromBot = emission;
+
+      this.onMessageCallback(textFromBot, debug);
+      this.chatHistoryManager.push({ made_by: 'chatbot', content: textFromBot, debug });
+    }
+  };
+
+  /**
+   * Returns a Promise that resolves with bot name
+   * @param {string} hookURL
+   * @param {string} apiKey
+   * @returns {Promise<Response | never>}
+   */
+  getBotName = (hookURL = this.configuration.hookURL, apiKey = this.configuration.apiKey) =>
+    fetch(`${hookURL}?key=${apiKey}`, {
+      method: 'GET',
+    }).then(response => {
+      if (!response.ok) {
+        throw response;
+      }
+      return response.json();
+    });
+
+  /**
+   * - Initialises the widget
+   * - Resolves promise on connection success with botName and history
+   * - Rejects promise if it fails
+   * @returns {Promise<object>}
+   * where object = {botName: string, history: Array[{content: string, made_by: string}]}
+   */
+  init = () => {
+    this.inSession = true;
+
+    return new Promise((resolve, reject) => {
+      // store promise to resolve on establish session success
+      this.promises.init = { resolve, reject };
+      this._setUpSocket();
+    });
+  };
+
+  /**
+   * Set callback for incoming messages
+   * @param {function} callback callback for incoming messages
+   */
+  onMessage = callback => {
+    this.onMessageCallback = callback;
+  };
+
+  /**
+   * Sends a message if connected, else queues it
+   * @param {string} message
+   */
+  send = message => {
+    if (this.connected) {
+      postMessage({
+        url: this.configuration.hookURL,
+        apiKey: this.configuration.apiKey,
+        input: message,
+        userId: this.userId,
+        payload: this.payload,
+      });
+
+      this.chatHistoryManager.push({ made_by: 'user', content: message });
+    } else {
+      if (this.messageQueue.length === 1 && this.messageQueue[0] === CONVERSATION_STARTER) {
+        this.messageQueue = [];
+      }
+
+      this.messageQueue.push(message);
+    }
+  };
+
+  /**
+   * - To get the bot to say the intro message (if exists)
+   * without having the user to send a message first
+   * - Must be called after init
+   */
+  initiateConversation = () => {
+    this.send(CONVERSATION_STARTER);
+  };
+
+  /**
+   * - Closes socket connection for good
+   * - Clears callback references
+   */
+  endSession = () => {
+    // toggle session flag first so socket doesn't reconnect
+    this.inSession = false;
+
+    if (this.socket) this.socket.close();
+
+    this.onMessage = f => f;
+    this.promises.getUserId = null;
+    this.messageQueue = [];
+    this.onConnectionChangeCallback = f => f;
+    this._clearInitPromise();
+  };
+
+  /**
+   * - Ends session
+   * - Clears all data & cookie
+   */
+  clearSession = () => {
+    this.endSession();
+
+    this.userId = null;
+    this.configuration = {};
+    this.notificationsChannelURL = null;
+    this.payload = getDefaultPayload();
+
+    this.cookieManager.remove();
+    this.chatHistoryManager.clean();
+  };
+
+  /**
+   * Sets callback for connection change
+   * @param {function} callback(isConnected: bool)
+   */
+  onConnectionChange = callback => {
+    this.onConnectionChangeCallback = callback;
+  };
+
+  /**
+   * - Adds a property to the payload object
+   * - If the property already exists, its value will be overwritten
+   * @param {string} key
+   * @param {*} value
+   */
+  attachToPayload = (key, value) => {
+    if (key === '' || key === null || key === undefined) {
+      console.error('TwylaWidget.attachToPayload: Payload key error');
+      return;
     }
 
-    store.messageQueue.push(message);
-  }
-};
-
-/**
- * - To get the bot to say the intro message (if exists)
- * without having the user to send a message first
- * - Must be called after init
- */
-API.initiateConversation = () => {
-  API.send(CONVERSATION_STARTER);
-};
-
-/**
- * Sets callback for connection change
- * @param {function} callback(isConnected: bool)
- */
-API.onConnectionChange = callback => {
-  store.onConnectionChangeCallback = callback;
-};
-
-/**
- * - Adds a property to the payload object
- * - If the property already exists, its value will be overwritten
- * @param {string} key
- * @param {*} value
- */
-API.attachToPayload = (key, value) => {
-  if (key === '' || key === null || key === undefined) {
-    console.error('TwylaWidget.attachToPayload: Payload key error');
-    return;
-  }
-
-  if (key === '_meta') {
-    console.error(`TwylaWidget.detachToPayload: Unable to attach system key "${key}"`);
-    return;
-  }
-
-  store.payload[key] = value;
-};
-
-/**
- * - Adds a property to the metadata object in payload
- * - If the property already exists, its value will be overwritten
- * @param {string} key
- * @param {*} value
- */
-API.setMetadata = (key, value) => {
-  if (key === '' || key === null || key === undefined) {
-    console.error('TwylaWidget.setMetadata: Metadata key error');
-    return;
-  }
-
-  store.payload._meta[key] = value;
-};
-
-/**
- * Removes a property from the payload object
- * @param {string} key
- */
-API.detachFromPayload = key => {
-  if (key === '_meta') {
-    console.error(`TwylaWidget.detachToPayload: Unable to detach reserved key "${key}"`);
-    return;
-  }
-
-  if (!store.payload.hasOwnProperty(key)) {
-    console.error(`TwylaWidget.detachFromPayload: Payload key "${key}" not found`);
-    return;
-  }
-
-  delete store.payload[key];
-};
-
-/**
- * Turn conversation logging on or off
- * @param {boolean} value true|false
- */
-API.setConversationLogging = value => {
-  if (value === true) {
-    delete store.payload._logging_disabled;
-  } else if (value === false) {
-    store.payload._logging_disabled = true;
-  }
-};
-
-/**
- * Check if conversation logging is on or off
- * @returns {boolean}
- */
-API.isConversationLogging = () => {
-  return !!!store.payload._logging_disabled;
-};
-
-/**
- * Returns a promise that resolves if and when user_id_cookie is available
- * @returns {Promise<string>}
- */
-API.getUserId = () => {
-  return new Promise(resolve => {
-    if (store.userId !== null && store.userId !== undefined) {
-      resolve(store.userId);
+    if (key === '_meta') {
+      console.error(`TwylaWidget.detachToPayload: Unable to attach system key "${key}"`);
+      return;
     }
 
-    store.promises.getUserId = { resolve };
-  });
-};
+    this.payload[key] = value;
+  };
 
-/**
- * Returns a Promise that resolves with bot name
- * @param {string} hookURL
- * @param {string} apiKey
- * @returns {Promise<Response | never>}
- */
-API.getBotName = (hookURL = store.configuration.hookURL, apiKey = store.configuration.apiKey) => {
-  return fetch(`${hookURL}?key=${apiKey}`, {
-    method: 'GET',
-  }).then(response => {
-    if (!response.ok) {
-      throw response;
+  /**
+   * Removes a property from the payload object
+   * @param {string} key
+   */
+  detachFromPayload = key => {
+    if (key === '_meta') {
+      console.error(`TwylaWidget.detachToPayload: Unable to detach reserved key "${key}"`);
+      return;
     }
-    return response.json();
-  });
-};
 
-/**
- * - Closes socket connection for good
- * - Clears callback references
- */
-API.endSession = () => {
-  // toggle session flag first so socket doesn't reconnect
-  store.inSession = false;
+    if (!Object.prototype.hasOwnProperty.call(this.payload, key)) {
+      console.error(`TwylaWidget.detachFromPayload: Payload key "${key}" not found`);
+      return;
+    }
 
-  if (store.socket) store.socket.close();
+    delete this.payload[key];
+  };
 
-  store.onMessage = f => f;
-  store.promises.getUserId = null;
-  store.messageQueue = [];
-  store.onConnectionChangeCallback = f => f;
+  /**
+   * Turn conversation logging on or off
+   * @param {boolean} value true|false
+   */
+  setConversationLogging = value => {
+    if (value === true) {
+      delete this.payload._logging_disabled;
+    } else if (value === false) {
+      this.payload._logging_disabled = true;
+    }
+  };
 
-  clearInitPromise();
-};
+  /**
+   * Check if conversation logging is on or off
+   * @returns {boolean}
+   */
+  isConversationLogging = () => {
+    return !this.payload._logging_disabled;
+  };
 
-/**
- * - Ends session
- * - Clears all data & cookie
- */
-API.clearSession = () => {
-  API.endSession();
+  /**
+   * Returns a promise that resolves if and when user_id_cookie is available
+   * @returns {Promise<string>}
+   */
+  getUserId = () => {
+    return new Promise(resolve => {
+      if (this.userId !== null && this.userId !== undefined) {
+        resolve(this.userId);
+      }
 
-  store.userId = null;
-  store.configuration = {};
-  store.notificationsChannelURL = null;
-  store.payload = getDefaultPayload();
+      this.promises.getUserId = { resolve };
+    });
+  };
 
-  Cookies.remove(COOKIE_NAME);
-  chatHistory.clean();
-};
+  /**
+   * - Adds a property to the metadata object in payload
+   * - If the property already exists, its value will be overwritten
+   * @param {string} key
+   * @param {*} value
+   */
+  setMetadata = (key, value) => {
+    if (key === '' || key === null || key === undefined) {
+      console.error('TwylaWidget.setMetadata: Metadata key error');
+      return;
+    }
 
-export { version } from '../package.json';
+    this.payload._meta[key] = value;
+  };
+}
 
-export const {
-  init,
-  send,
-  initiateConversation,
-  onConnectionChange,
-  attachToPayload,
-  detachFromPayload,
-  setMetadata,
-  isConversationLogging,
-  setConversationLogging,
-  getUserId,
-  getBotName,
-  clearSession,
-  endSession,
-} = API;
+export default WidgetCore;
