@@ -15,12 +15,6 @@ export const getDefaultPayload = () => ({
  */
 export const notificationsChannelURLFromHookURL = hookURL => {
   const hookURLTokens = hookURL.split('/');
-  const botName = hookURLTokens[5]
-    .split('/')
-    .pop()
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.substr(1))
-    .join(' ');
   let environment;
   let notificationsChannelURL;
 
