@@ -1,6 +1,6 @@
 {
   "name": "@twyla-ai/widget-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Twyla Widget Core",
   "main": "dist/index.js",
   "scripts": {
