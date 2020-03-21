@@ -9,7 +9,7 @@ npm i -S @twyla-ai/widget-core
 ## Usage
 
 ```js
-import * as TwylaWidgetCore from '@twyla-ai/widget-core';
+import TwylaWidgetCore from '@twyla-ai/widget-core';
 
 // create an instance
 // this doesn't initialise a connection with the bot
