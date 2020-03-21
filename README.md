@@ -46,7 +46,7 @@ twylaWidgetCore = null;
 
 **Note:** Try to call `init` only when user has to chat with the bot (typically on chat window open) rather than on website/app load. Once initialised, the connection will be active in background for the lifetime of the website/app and will automatically reconnect on outages such as network loss. Call `endSession` to finish the chat in cases such as navigating to a page that doesn't have the chat feature. If you have to resume the chat on re-navigating to the page(s) with the chat, you can create a new instance and the chat will resume where it was left off.
 
-You can chat with multiple bots by creating different instances of the library.<br/><br/>
+You can chat with multiple bots by creating different instances of the library.
 
 ## API
 
