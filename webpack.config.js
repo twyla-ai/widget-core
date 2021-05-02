@@ -8,7 +8,7 @@ module.exports = (env, argv) => {
   const production = argv.mode === 'production';
 
   return {
-    devtool: !production ? 'cheap-module-source-map' : '',
+    devtool: !production ? 'cheap-module-source-map' : false,
     entry: {
       main: ['./src/index.js'],
     },
