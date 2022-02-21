@@ -15,20 +15,28 @@ export const getDefaultPayload = () => ({
  */
 export const notificationsChannelURLFromHookURL = hookURL => {
   const hookURLTokens = hookURL.split('/');
+  const hookURLParsed = new URL(hookURL);
   let environment;
   let notificationsChannelURL;
 
-  const environmentSearch = /api\.(.*)\.canvas/.exec(hookURL);
+  if (['localhost', '127.0.0.1'].includes(hookURLParsed.hostname)) {
+    notificationsChannelURL = `${hookURLParsed.protocol === 'http:' ? 'ws' : 'wss'}://${hookURLParsed.hostname}`;
+    if (hookURLParsed.port) {
+      notificationsChannelURL += `:${hookURLParsed.port}`
+    }
+  } else {
+    const environmentSearch = /api\.(.*)\.canvas/.exec(hookURL);
 
-  if (!environmentSearch) environment = 'production';
-  else [, environment] = environmentSearch;
+    if (!environmentSearch) environment = 'production';
+    else [, environment] = environmentSearch;
 
-  notificationsChannelURL = `wss://notification.${
-    !environmentSearch ? '' : `${environment}.`
-  }canvas.twyla.ai/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`;
+    notificationsChannelURL = `wss://notification.${
+      !environmentSearch ? '' : `${environment}.`
+    }canvas.twyla.ai`;
+  }
 
   return {
-    notificationsChannelURL,
+    notificationsChannelURL: `${notificationsChannelURL}/widget-notifications/${hookURLTokens[4]}/${hookURLTokens[5]}`,
     workspaceName: hookURLTokens[4],
     projectName: hookURLTokens[5],
   };
